@@ -127,10 +127,10 @@ def operating_freq_inquiry(ser):
 
     clock_type_count = ord(data[0])
     clock_freq_ranges = list()
-    for i in range(0, clock_type_count*2, 2):
+    for i in range(1, 1+clock_type_count*4, 4):
         clock_freq_ranges.append({
-            'min_mhz': ord(data[i+1]),
-            'max_mhz': ord(data[i+2]),
+            'min_mhz': struct.unpack('!H', data[i:i+2])[0] / 100,
+            'max_mhz': struct.unpack('!H', data[i+2:i+4])[0] / 100,
         })
 
     return clock_freq_ranges
@@ -182,7 +182,7 @@ if __name__ == "__main__":
         # print multi_ratios
         # operating_freqs = operating_freq_inquiry(ser)
         # print operating_freqs
-        bitrate_select(ser, BAUDRATE, 10, 1, 8, 4)
+        bitrate_select(ser, BAUDRATE, 64, 1, 8, 4)
 
         keycode_check(ser, '\x00' * 16)
         with open('~/fw.bin', 'w+') as f:
