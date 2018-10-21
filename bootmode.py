@@ -139,6 +139,10 @@ def bitrate_select(ser, bit_rate_kbps, input_freq_mhz, clock_count, ratio1, rati
     print('[BITRATE SELECT] {} {} {} {} {}'.format(bit_rate_kbps, input_freq_mhz, clock_count, ratio1, ratio2))
     send_request(ser, '\x3F', struct.pack('!H', int(bit_rate_kbps/100)) + struct.pack('!H', int(input_freq_mhz*100)) + chr(clock_count) + chr(ratio1) + chr(ratio2))
     get_response(ser, '\x06', no_data=True)
+    # TODO: should be 1 bit time at previous bitrate before confirmation
+    time.sleep(0.0001)
+    send_request(ser, '\x06')
+    get_response(ser, '\x06', no_data=True)
 
 def keycode_check(ser, key_code):
     print('[KEYCODE CHECK]')
