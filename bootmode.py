@@ -103,6 +103,36 @@ def clock_select(ser, clock):
     send_request(ser, '\x11', chr(clock))
     get_response(ser, '\x06', no_data=True)
 
+def user_boot_mat_inquiry(ser):
+    print('[USER BOOT MEMORY ADDR INQUIRY]')
+    send_request(ser, '\x24')
+    data = get_response(ser, '\x34')
+
+    mat_count = ord(data[0])
+    mat_ranges = list()
+    for i in range(1, len(data), 8):
+        mat_ranges.append({
+            'start_addr': struct.unpack('!I', data[i:i+4])[0],
+            'end_addr': struct.unpack('!I', data[i+4:i+8])[0],
+        })
+
+    return mat_ranges
+
+def user_mat_inquiry(ser):
+    print('[USER MEMORY ADDR INQUIRY]')
+    send_request(ser, '\x25')
+    data = get_response(ser, '\x35')
+
+    mat_count = ord(data[0])
+    mat_ranges = list()
+    for i in range(1, len(data), 8):
+        mat_ranges.append({
+            'start_addr': struct.unpack('!I', data[i:i+4])[0],
+            'end_addr': struct.unpack('!I', data[i+4:i+8])[0],
+        })
+
+    return mat_ranges
+
 def multiplication_ratio_inquiry(ser):
     print('[MULTIPLICATION RATIO INQUIRY]')
     send_request(ser, '\x22')
@@ -135,19 +165,25 @@ def operating_freq_inquiry(ser):
 
     return clock_freq_ranges
 
-def bitrate_select(ser, bit_rate_kbps, input_freq_mhz, clock_count, ratio1, ratio2):
-    print('[BITRATE SELECT] {} {} {} {} {}'.format(bit_rate_kbps, input_freq_mhz, clock_count, ratio1, ratio2))
-    send_request(ser, '\x3F', struct.pack('!H', int(bit_rate_kbps/100)) + struct.pack('!H', int(input_freq_mhz*100)) + chr(clock_count) + chr(ratio1) + chr(ratio2))
+def bitrate_select(ser, baud_rate, input_freq_mhz, clock_count, ratio1, ratio2):
+    print('[BITRATE SELECT] {} {} {} {} {}'.format(baud_rate, input_freq_mhz, clock_count, ratio1, ratio2))
+    send_request(ser, '\x3F', struct.pack('!H', int(baud_rate/100)) + struct.pack('!H', int(input_freq_mhz*100)) + chr(clock_count) + chr(ratio1) + chr(ratio2))
     get_response(ser, '\x06', no_data=True)
-    # TODO: should be 1 bit time at previous bitrate before confirmation
-    time.sleep(0.0001)
+
+    # wait 1 bit time step before changing
+    time.sleep(1/ser.baudrate)
+    ser.baudrate = baud_rate
+
+    # confirmation    
     send_request(ser, '\x06')
     get_response(ser, '\x06', no_data=True)
 
 def keycode_check(ser, key_code):
     print('[KEYCODE CHECK]')
+    # transition to key-code determination state
     send_request(ser, '\x40')
     get_response(ser, '\x16', no_data=True)
+    # perform key-code check
     send_request(ser, '\x60', key_code)
     get_response(ser, '\x26', no_data=True)
 
@@ -181,6 +217,11 @@ if __name__ == "__main__":
         # clocks = clock_inquiry(ser)
         # print clocks
         clock_select(ser, 0)
+
+        # user_boot_mat = user_boot_mat_inquiry(ser)
+        # print user_boot_mat
+        # user_mat = user_mat_inquiry(ser)
+        # print user_mat
 
         # multi_ratios = multiplication_ratio_inquiry(ser)
         # print multi_ratios
