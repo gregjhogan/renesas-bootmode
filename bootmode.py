@@ -210,24 +210,29 @@ if __name__ == "__main__":
         # status = status_inquiry(ser)
         # print status
 
-        # devices = device_inquiry(ser)
+        devices = device_inquiry(ser)
         # print devices
-        device_select(ser, 't16A')
+        device_select(ser, devices[0])
 
-        # clocks = clock_inquiry(ser)
+        clocks = clock_inquiry(ser)
         # print clocks
-        clock_select(ser, 0)
+        clock_select(ser, clocks[0])
 
         # user_boot_mat = user_boot_mat_inquiry(ser)
         # print user_boot_mat
         # user_mat = user_mat_inquiry(ser)
         # print user_mat
 
-        # multi_ratios = multiplication_ratio_inquiry(ser)
+        multi_ratios = multiplication_ratio_inquiry(ser)
         # print multi_ratios
-        # operating_freqs = operating_freq_inquiry(ser)
+        operating_freqs = operating_freq_inquiry(ser)
         # print operating_freqs
-        bitrate_select(ser, BAUDRATE, 64, 1, 8, 4)
+        ratio1 = multi_ratios[0][0]
+        ratio2 = multi_ratios[1][0]
+        base1 = operating_freqs[0].max_mhz / ratio1
+        base2 = operating_freqs[1].max_mhz / ratio2
+        assert base1 == base2, "failed to find base clock for both multipliers"
+        bitrate_select(ser, BAUDRATE, base1, 2, ratio1, ratio2)
 
         keycode_check(ser, '\x00' * 16)
         with open('~/fw.bin', 'w+') as f:
