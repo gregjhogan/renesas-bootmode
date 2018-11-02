@@ -218,11 +218,6 @@ if __name__ == "__main__":
         # print clocks
         clock_select(ser, clocks[0])
 
-        # user_boot_mat = user_boot_mat_inquiry(ser)
-        # print user_boot_mat
-        # user_mat = user_mat_inquiry(ser)
-        # print user_mat
-
         multi_ratios = multiplication_ratio_inquiry(ser)
         # print multi_ratios
         operating_freqs = operating_freq_inquiry(ser)
@@ -234,7 +229,23 @@ if __name__ == "__main__":
         assert base1 == base2, "failed to find base clock for both multipliers"
         bitrate_select(ser, BAUDRATE, base1, 2, ratio1, ratio2)
 
+        user_boot_mat = user_boot_mat_inquiry(ser)
+        # print user_boot_mat
+        user_mat = user_mat_inquiry(ser)
+        # print user_mat
+
         keycode_check(ser, '\x00' * 16)
-        with open('~/fw.bin', 'w+') as f:
-            data = read_memory(ser, 1, 0, 0x80000, 0x40)
+
+        mem_area = 0 # user boot memory area
+        start_addr = user_boot_mat[0].start_addr
+        end_addr = user_boot_mat[0].end_addr
+        with open('~/user_boot.bin', 'w+') as f:
+            data = read_memory(ser, mem_area, start_addr, end_addr+1, 0x40)
+            f.write(data)
+
+        mem_area = 1 # user memory area
+        start_addr = user_mat[0].start_addr
+        end_addr = user_mat[0].end_addr
+        with open('~/user.bin', 'w+') as f:
+            data = read_memory(ser, mem_area, start_addr, end_addr+1, 0x40)
             f.write(data)
