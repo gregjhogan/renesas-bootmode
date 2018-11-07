@@ -48,7 +48,15 @@ def get_response(ser, id, no_data=False, no_checksum=False, size_len=1):
         res += size
         assert len(size) == size_len, 'TIMEOUT!'
 
-        byte_cnt = ord(size)
+        if size_len == 1:
+            byte_cnt = ord(size)
+        elif size_len == 2:
+            byte_cnt = struct.unpack('!H', size)[0]
+        elif size_len == 4:
+            byte_cnt = struct.unpack('!I', size)[0]
+        else:
+            raise Exception("invalid size_len: {}".format(size_len))
+
         data = ser.read(byte_cnt)
         res += data
         assert len(data) == byte_cnt, 'TIMEOUT!'
