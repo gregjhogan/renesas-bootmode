@@ -83,7 +83,7 @@ def device_inquiry(ser):
     return devices
 
 def device_select(ser, device):
-    print('[DEVICE SELECT] {}'.format(device))
+    print('[DEVICE SELECT] device={}'.format(device))
     send_request(ser, '\x10', device)
     get_response(ser, '\x06', no_data=True)
 
@@ -99,7 +99,7 @@ def clock_inquiry(ser):
     return clocks
 
 def clock_select(ser, clock):
-    print('[CLOCK SELECT] {}'.format(clock))
+    print('[CLOCK SELECT] clock={}'.format(clock))
     send_request(ser, '\x11', chr(clock))
     get_response(ser, '\x06', no_data=True)
 
@@ -166,7 +166,7 @@ def operating_freq_inquiry(ser):
     return clock_freq_ranges
 
 def bitrate_select(ser, baud_rate, input_freq_mhz, clock_count, ratio1, ratio2):
-    print('[BITRATE SELECT] {} {} {} {} {}'.format(baud_rate, input_freq_mhz, clock_count, ratio1, ratio2))
+    print('[BITRATE SELECT] baud_rate={} input_freq_mhz={} clock_count={} ratio1={} ratio2={}'.format(baud_rate, input_freq_mhz, clock_count, ratio1, ratio2))
     send_request(ser, '\x3F', struct.pack('!H', int(baud_rate/100)) + struct.pack('!H', int(input_freq_mhz*100)) + chr(clock_count) + chr(ratio1) + chr(ratio2))
     get_response(ser, '\x06', no_data=True)
 
@@ -197,7 +197,7 @@ def status_inquiry(ser):
     }
 
 def read_memory(ser, mem_area, start, end, block_size):
-    print('[READ MEMORY] area={} start={} end={} block_size={}')
+    print('[READ MEMORY] area={} start={} end={} block_size={}'.format(mem_area, start, end, block_size))
     data = ''
     for i in range(start, end, block_size):
         send_request(ser, '\x52', chr(mem_area) + struct.pack('!I', i) + struct.pack('!I', block_size))
