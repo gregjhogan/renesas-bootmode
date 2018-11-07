@@ -224,8 +224,8 @@ if __name__ == "__main__":
         # print operating_freqs
         ratio1 = multi_ratios[0][0]
         ratio2 = multi_ratios[1][0]
-        base1 = operating_freqs[0].max_mhz / ratio1
-        base2 = operating_freqs[1].max_mhz / ratio2
+        base1 = operating_freqs[0]['max_mhz'] / ratio1
+        base2 = operating_freqs[1]['max_mhz'] / ratio2
         assert base1 == base2, "failed to find base clock for both multipliers"
         bitrate_select(ser, BAUDRATE, base1, 2, ratio1, ratio2)
 
@@ -237,15 +237,15 @@ if __name__ == "__main__":
         keycode_check(ser, '\x00' * 16)
 
         mem_area = 0 # user boot memory area
-        start_addr = user_boot_mat[0].start_addr
-        end_addr = user_boot_mat[0].end_addr
-        with open('~/user_boot.bin', 'w+') as f:
+        start_addr = user_boot_mat[0]['start_addr']
+        end_addr = user_boot_mat[0]['end_addr']
+        with open('user_boot.bin', 'w+') as f:
             data = read_memory(ser, mem_area, start_addr, end_addr+1, 0x40)
             f.write(data)
 
         mem_area = 1 # user memory area
-        start_addr = user_mat[0].start_addr
-        end_addr = user_mat[0].end_addr
-        with open('~/user.bin', 'w+') as f:
+        start_addr = user_mat[0]['start_addr']
+        end_addr = user_mat[0]['end_addr']
+        with open('user.bin', 'w+') as f:
             data = read_memory(ser, mem_area, start_addr, end_addr+1, 0x40)
             f.write(data)
