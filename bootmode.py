@@ -3,10 +3,11 @@ import time
 import struct
 import serial
 from hexdump import hexdump
+from tqdm import tqdm
 
 SERIALPORT = '/dev/ttyUSB0'
 BAUDRATE = 9600
-DEBUG = True
+DEBUG = False
 
 def handshake(ser):
     print('[HANDSHAKE]')
@@ -207,29 +208,28 @@ def status_inquiry(ser):
 def read_memory(ser, mem_area, start, end, block_size):
     print('[READ MEMORY] area={} start={} end={} block_size={}'.format(mem_area, start, end, block_size))
     data = ''
-    for i in range(start, end, block_size):
+    for i in tqdm(range(start, end, block_size)):
         send_request(ser, '\x52', chr(mem_area) + struct.pack('!I', i) + struct.pack('!I', block_size))
         data += get_response(ser, '\x52', size_len=4)
     return data
 
 if __name__ == "__main__":
+    # example usage
     with serial.Serial(SERIALPORT, BAUDRATE, timeout=0.2) as ser:
         handshake(ser)
-        # status = status_inquiry(ser)
-        # print status
 
         devices = device_inquiry(ser)
-        # print devices
+        #print("devices: {}".format(devices))
         device_select(ser, devices[0])
 
         clocks = clock_inquiry(ser)
-        # print clocks
+        #print("clocks: {}".format(clocks))
         clock_select(ser, clocks[0])
 
         multi_ratios = multiplication_ratio_inquiry(ser)
-        # print multi_ratios
+        #print("multiplication ratios: {}".format(multi_ratios))
         operating_freqs = operating_freq_inquiry(ser)
-        # print operating_freqs
+        #print("operating frequencies: {}".format(operating_freqs))
         ratio1 = multi_ratios[0][0]
         ratio2 = multi_ratios[1][0]
         base1 = operating_freqs[0]['max_mhz'] / ratio1
@@ -238,10 +238,11 @@ if __name__ == "__main__":
         bitrate_select(ser, BAUDRATE, base1, 2, ratio1, ratio2)
 
         user_boot_mat = user_boot_mat_inquiry(ser)
-        # print user_boot_mat
+        #print("user boot memory area: {}".format(user_boot_mat))
         user_mat = user_mat_inquiry(ser)
-        # print user_mat
+        #print("user memory area: {}".format(user_mat))
 
+        # any key code is accepted if the key code has not been set
         keycode_check(ser, '\x00' * 16)
 
         mem_area = 0 # user boot memory area
