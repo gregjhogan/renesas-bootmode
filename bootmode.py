@@ -213,6 +213,18 @@ def read_memory(ser, mem_area, start, end, block_size):
         data += get_response(ser, '\x52', size_len=4)
     return data
 
+def user_boot_mat_checksum_inquiry(ser):
+    print('[USER BOOT MEMORY CHECKSUM INQUIRY]')
+    send_request(ser, '\x4A')
+    data = get_response(ser, '\x5A')
+    return struct.unpack('!I', data)[0]
+
+def user_mat_checksum_inquiry(ser):
+    print('[USER MEMORY CHECKSUM INQUIRY]')
+    send_request(ser, '\x4B')
+    data = get_response(ser, '\x5B')
+    return struct.unpack('!I', data)[0]
+
 if __name__ == "__main__":
     # example usage
     with serial.Serial(SERIALPORT, BAUDRATE, timeout=0.2) as ser:
@@ -245,16 +257,25 @@ if __name__ == "__main__":
         # any key code is accepted if the key code has not been set
         keycode_check(ser, '\x00' * 16)
 
+        user_boot_mat_checksum = user_boot_mat_checksum_inquiry(ser)
+        #print("user boot memory checksum: {}".format(user_boot_checksum))
+        user_mat_checksum = user_mat_checksum_inquiry(ser)
+        #print("user memory checksum: {}".format(user_mat_checksum))
+
         mem_area = 0 # user boot memory area
         start_addr = user_boot_mat[0]['start_addr']
         end_addr = user_boot_mat[0]['end_addr']
+        data = read_memory(ser, mem_area, start_addr, end_addr+1, 0x40)
         with open('user_boot.bin', 'w+') as f:
-            data = read_memory(ser, mem_area, start_addr, end_addr+1, 0x40)
             f.write(data)
+        checksum = sum(map(ord, data)) & 0xFFFFFFFF
+        assert user_boot_mat_checksum == checksum, "failed checksum validation"
 
         mem_area = 1 # user memory area
         start_addr = user_mat[0]['start_addr']
         end_addr = user_mat[0]['end_addr']
+        data = read_memory(ser, mem_area, start_addr, end_addr+1, 0x40)
         with open('user.bin', 'w+') as f:
-            data = read_memory(ser, mem_area, start_addr, end_addr+1, 0x40)
             f.write(data)
+        checksum = sum(map(ord, data)) & 0xFFFFFFFF
+        assert user_mat_checksum == checksum, "failed checksum validation"
