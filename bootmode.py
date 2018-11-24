@@ -255,7 +255,8 @@ if __name__ == "__main__":
         #print("user memory area: {}".format(user_mat))
 
         # any key code is accepted if the key code has not been set
-        keycode_check(ser, '\x00' * 16)
+        keycode = '\x00' * 16
+        keycode_check(ser, keycode)
 
         user_boot_mat_checksum = user_boot_mat_checksum_inquiry(ser)
         #print("user boot memory checksum: {}".format(user_boot_checksum))
@@ -277,5 +278,5 @@ if __name__ == "__main__":
         data = read_memory(ser, mem_area, start_addr, end_addr+1, 0x40)
         with open('user.bin', 'w+') as f:
             f.write(data)
-        checksum = sum(map(ord, data)) & 0xFFFFFFFF
+        checksum = sum(map(ord, data + keycode)) & 0xFFFFFFFF
         assert user_mat_checksum == checksum, "failed checksum validation"
