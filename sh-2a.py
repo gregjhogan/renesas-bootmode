@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 import sys
 import time
 import struct
@@ -16,20 +15,20 @@ def handshake(ser):
     ser.reset_input_buffer()
     ser.reset_output_buffer()
 
-    ser.write('\x00' * 30)
-    get_response(ser, '\x00', no_data=True)
-    send_request(ser, '\x55')
-    get_response(ser, '\xE6', no_data=True)
+    ser.write(b'\x00' * 30)
+    get_response(ser, b'\x00', no_data=True)
+    send_request(ser, b'\x55')
+    get_response(ser, b'\xE6', no_data=True)
 
 def get_checksum(req):
-    chksum = -sum(map(ord, req))
-    return chr(chksum & 0xFF)
+    chksum = -sum(req)
+    return bytes([chksum & 0xFF])
 
 def send_request(ser, id, data=None):
     if DEBUG: print('TX --->')
     req = id
     if data and len(data):
-        req += chr(len(data)) + data
+        req += bytes([len(data)]) + data
         req += get_checksum(req)
     if DEBUG: hexdump(req)
     ser.write(req)
@@ -79,8 +78,8 @@ def get_response(ser, id, no_data=False, no_checksum=False, size_len=1):
 
 def device_inquiry(ser):
     print('[DEVICE INQUIRY]')
-    send_request(ser, '\x20')
-    data = get_response(ser, '\x30')
+    send_request(ser, b'\x20')
+    data = get_response(ser, b'\x30')
 
     devices = list()
     count = ord(data[0])
@@ -94,13 +93,13 @@ def device_inquiry(ser):
 
 def device_select(ser, device):
     print('[DEVICE SELECT] device={}'.format(device))
-    send_request(ser, '\x10', device)
-    get_response(ser, '\x06', no_data=True)
+    send_request(ser, b'\x10', device)
+    get_response(ser, b'\x06', no_data=True)
 
 def clock_inquiry(ser):
     print('[CLOCK INQUIRY]')
-    send_request(ser, '\x21')
-    data = get_response(ser, '\x31')
+    send_request(ser, b'\x21')
+    data = get_response(ser, b'\x31')
 
     clocks = list()
     for i in range(len(data)):
@@ -110,13 +109,13 @@ def clock_inquiry(ser):
 
 def clock_select(ser, clock):
     print('[CLOCK SELECT] clock={}'.format(clock))
-    send_request(ser, '\x11', chr(clock))
-    get_response(ser, '\x06', no_data=True)
+    send_request(ser, b'\x11', bytes([clock]))
+    get_response(ser, b'\x06', no_data=True)
 
 def user_boot_mat_inquiry(ser):
     print('[USER BOOT MEMORY ADDR INQUIRY]')
-    send_request(ser, '\x24')
-    data = get_response(ser, '\x34')
+    send_request(ser, b'\x24')
+    data = get_response(ser, b'\x34')
 
     mat_count = ord(data[0])
     mat_ranges = list()
@@ -130,8 +129,8 @@ def user_boot_mat_inquiry(ser):
 
 def user_mat_inquiry(ser):
     print('[USER MEMORY ADDR INQUIRY]')
-    send_request(ser, '\x25')
-    data = get_response(ser, '\x35')
+    send_request(ser, b'\x25')
+    data = get_response(ser, b'\x35')
 
     mat_count = ord(data[0])
     mat_ranges = list()
@@ -145,8 +144,8 @@ def user_mat_inquiry(ser):
 
 def multiplication_ratio_inquiry(ser):
     print('[MULTIPLICATION RATIO INQUIRY]')
-    send_request(ser, '\x22')
-    data = get_response(ser, '\x32')
+    send_request(ser, b'\x22')
+    data = get_response(ser, b'\x32')
 
     clock_type_count = ord(data[0])
     clock_multi_ratios = list()
@@ -162,8 +161,8 @@ def multiplication_ratio_inquiry(ser):
 
 def operating_freq_inquiry(ser):
     print('[OPERATING FREQUENCY INQUIRY]')
-    send_request(ser, '\x23')
-    data = get_response(ser, '\x33')
+    send_request(ser, b'\x23')
+    data = get_response(ser, b'\x33')
 
     clock_type_count = ord(data[0])
     clock_freq_ranges = list()
@@ -177,30 +176,30 @@ def operating_freq_inquiry(ser):
 
 def bitrate_select(ser, baud_rate, input_freq_mhz, clock_count, ratio1, ratio2):
     print('[BITRATE SELECT] baud_rate={} input_freq_mhz={} clock_count={} ratio1={} ratio2={}'.format(baud_rate, input_freq_mhz, clock_count, ratio1, ratio2))
-    send_request(ser, '\x3F', struct.pack('!H', int(baud_rate/100)) + struct.pack('!H', int(input_freq_mhz*100)) + chr(clock_count) + chr(ratio1) + chr(ratio2))
-    get_response(ser, '\x06', no_data=True)
+    send_request(ser, b'\x3F', struct.pack('!H', int(baud_rate/100)) + struct.pack('!H', int(input_freq_mhz*100)) + bytes(clock_count, ratio1, ratio2))
+    get_response(ser, b'\x06', no_data=True)
 
     # wait 1 bit time step before changing
     time.sleep(1/ser.baudrate)
     ser.baudrate = baud_rate
 
     # confirmation    
-    send_request(ser, '\x06')
-    get_response(ser, '\x06', no_data=True)
+    send_request(ser, b'\x06')
+    get_response(ser, b'\x06', no_data=True)
 
 def keycode_check(ser, key_code):
     print('[KEYCODE CHECK]')
     # transition to key-code determination state
-    send_request(ser, '\x40')
-    get_response(ser, '\x16', no_data=True)
+    send_request(ser, b'\x40')
+    get_response(ser, b'\x16', no_data=True)
     # perform key-code check
-    send_request(ser, '\x60', key_code)
-    get_response(ser, '\x26', no_data=True)
+    send_request(ser, b'\x60', key_code)
+    get_response(ser, b'\x26', no_data=True)
 
 def status_inquiry(ser):
     print('[STATUS INQUIRY]')
-    send_request(ser, '\x4F')
-    data = get_response(ser, '\x5F', no_checksum=True)
+    send_request(ser, b'\x4F')
+    data = get_response(ser, b'\x5F', no_checksum=True)
     return {
         "status": data[0],
         "error": data[1],
@@ -210,20 +209,20 @@ def read_memory(ser, mem_area, start, end, block_size):
     print('[READ MEMORY] area={} start={} end={} block_size={}'.format(mem_area, start, end, block_size))
     data = ''
     for i in tqdm(range(start, end, block_size)):
-        send_request(ser, '\x52', chr(mem_area) + struct.pack('!I', i) + struct.pack('!I', block_size))
-        data += get_response(ser, '\x52', size_len=4)
+        send_request(ser, b'\x52', bytes([mem_area]) + struct.pack('!I', i) + struct.pack('!I', block_size))
+        data += get_response(ser, b'\x52', size_len=4)
     return data
 
 def user_boot_mat_checksum_inquiry(ser):
     print('[USER BOOT MEMORY CHECKSUM INQUIRY]')
-    send_request(ser, '\x4A')
-    data = get_response(ser, '\x5A')
+    send_request(ser, b'\x4A')
+    data = get_response(ser, b'\x5A')
     return struct.unpack('!I', data)[0]
 
 def user_mat_checksum_inquiry(ser):
     print('[USER MEMORY CHECKSUM INQUIRY]')
-    send_request(ser, '\x4B')
-    data = get_response(ser, '\x5B')
+    send_request(ser, b'\x4B')
+    data = get_response(ser, b'\x5B')
     return struct.unpack('!I', data)[0]
 
 if __name__ == "__main__":
@@ -256,7 +255,7 @@ if __name__ == "__main__":
         #print("user memory area: {}".format(user_mat))
 
         # any key code is accepted if the key code has not been set
-        keycode = '\x00' * 16
+        keycode = b'\x00' * 16
         keycode_check(ser, keycode)
 
         user_boot_mat_checksum = user_boot_mat_checksum_inquiry(ser)

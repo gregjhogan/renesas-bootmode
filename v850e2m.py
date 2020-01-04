@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 import sys
 import os
 import time
@@ -17,26 +16,26 @@ def pulse(ser):
 
     print('[PULSE]')
     time.sleep(0.2)
-    ser.write('\x00')
+    ser.write(b'\x00')
     time.sleep(0.02)
-    ser.write('\x00')
+    ser.write(b'\x00')
     time.sleep(0.02)
 
     # single wire serial will have echo
     ser.reset_input_buffer()
 
 def get_checksum(req):
-    chksum = -sum(map(ord, req))
-    return chr(chksum & 0xFF)
+    chksum = -sum(req)
+    return bytes([chksum & 0xFF])
 
 def send_request(ser, id, data=None):
     if DEBUG: print('TX --->')
-    h = '\x01'
+    h = b'\x01'
     l = len(data) if data is not None else 0
     req = struct.pack('!H', l+1) + id
     if data: req += data
     req += get_checksum(req)
-    f = '\x03'
+    f = b'\x03'
     if DEBUG: hexdump(h + req + f)
     ser.write(h + req + f)
 
@@ -54,7 +53,7 @@ def get_status(ser):
     h = ser.read()
     assert len(h) == 1, 'TIMEOUT!'
     # 0x11 = data frame
-    if h != '\x11':
+    if h != b'\x11':
         if DEBUG: hexdump(h + ser.read())
         raise Exception('EXPECTED DATA FRAME!')
 
@@ -73,7 +72,7 @@ def get_status(ser):
     res += s
     assert len(s) == l, 'TIMEOUT!'
     # 0x06 = normal acknowledgment
-    if s[0] != '\x06':
+    if s[0] != b'\x06':
         if DEBUG: hexdump(h + res + ser.read(100))
         raise Exception('EXPECTED NORMAL ACKNOWLEDGMENT!')
 
@@ -87,7 +86,7 @@ def get_status(ser):
     f = ser.read()
     assert len(f) == 1, 'TIMEOUT!'
     # 0x03 = end of frame
-    if f != '\x03':
+    if f != b'\x03':
         if DEBUG: hexdump(h + res + f + ser.read())
         raise Exception('EXPECTED END OF FRAME!')
 
@@ -99,7 +98,7 @@ def get_data(ser):
     h = ser.read()
     assert len(h) == 1, 'TIMEOUT!'
     # 0x11 = data frame
-    if h != '\x11':
+    if h != b'\x11':
         if DEBUG: hexdump(h + ser.read())
         raise Exception('EXPECTED DATA FRAME!')
 
@@ -124,20 +123,20 @@ def get_data(ser):
     f = ser.read()
     assert len(f) == 1, 'TIMEOUT!'
     # 0x03 = end of frame
-    if f != '\x03' and f != '\x17':
+    if f != b'\x03' and f != b'\x17':
         if DEBUG: hexdump(h + res + f + ser.read())
         raise Exception('EXPECTED END OF FRAME!')
 
     if DEBUG: hexdump(h + res + f)
-    return d, f == '\x03'
+    return d, f == b'\x03'
 
 def send_acknowledgment(ser):
     if DEBUG: print('TX --->')
-    h = '\x11'
+    h = b'\x11'
     l = 1
-    req = struct.pack('!H', l) + '\x06'
+    req = struct.pack('!H', l) + b'\x06'
     req += get_checksum(req)
-    f = '\x03'
+    f = b'\x03'
     if DEBUG: hexdump(h + req + f)
     ser.write(h + req + f)
 
@@ -151,19 +150,18 @@ def send_acknowledgment(ser):
 
 def reset(ser):
     print('[RESET]')
-
-    send_request(ser, '\x00')
+    send_request(ser, b'\x00')
     get_status(ser)
 
 def oscillating_frequency_set(ser, d01, d02, d03, d04):
     print('[OSCILLATING FREQUENCY SET] d01={} d02={} d03={} d04={}'.format(d01, d02, d03, d04))
     # oscillation frequency kHz = (D01 * 0.1 + D02 * 0.01 + D03 * 0.001) * 10D0
-    send_request(ser, '\x90', chr(d01) + chr(d02) + chr(d03) + chr(d04))
+    send_request(ser, b'\x90', bytes([d01, d02, d03, d04]))
     get_status(ser)
 
 def baud_rate_set(ser, d01):
     print('[BAUD RATE SET] d01={}'.format(d01))
-    send_request(ser, '\x9A', chr(d01))
+    send_request(ser, b'\x9A', bytes([d01]))
     get_status(ser)
     time.sleep(0.35)
     assert d01 == 0x01, 'UNSUPPORTED BAUD RATE!'
@@ -172,7 +170,7 @@ def baud_rate_set(ser, d01):
 def memory_read(ser, start_addr, end_addr):
     print('[MEMORY READ] start_addr={} end_addr={}'.format(start_addr, end_addr))
     data = ''
-    send_request(ser, '\x50', struct.pack('!I', start_addr) + struct.pack('!I', end_addr))
+    send_request(ser, b'\x50', struct.pack('!I', start_addr) + struct.pack('!I', end_addr))
     get_status(ser)
     done = False
     cnt = 0
@@ -186,17 +184,19 @@ def memory_read(ser, start_addr, end_addr):
     print(cnt)
     return data
 
-def memory_checksum(ser, start_addr, end_addr):
-    print('[MEMORY CHECKSUM]')
-    send_request(ser, '\xB0', struct.pack('!I', start_addr) + struct.pack('!I', end_addr))
-    data = get_status(ser)
-    return struct.unpack('!H', data)[0]
+# TODO: figure out the correct request ID
+# def memory_checksum(ser, start_addr, end_addr):
+#     print('[MEMORY CHECKSUM]')
+#     send_request(ser, b'\xB0', struct.pack('!I', start_addr) + struct.pack('!I', end_addr))
+#     data = get_status(ser)
+#     return struct.unpack('!H', data)[0]
 
-def silicon_signature(ser):
-    print('[SILICON SIGNATURE]')
-    send_request(ser, '\xC0')
-    data = get_status(ser)
-    return struct.unpack('!H', data)[0]
+# TODO: figure out the correct request ID
+# def silicon_signature(ser):
+#     print('[SILICON SIGNATURE]')
+#     send_request(ser, b'\xC0')
+#     data = get_status(ser)
+#     return struct.unpack('!H', data)[0]
 
 if __name__ == "__main__":
     # example usage
@@ -205,24 +205,27 @@ if __name__ == "__main__":
         reset(ser)
         # 16000 kHz
         oscillating_frequency_set(ser, 0x01, 0x06, 0x00, 0x05)
+        # TODO: crappy tri-state buffer can't handle higher speed
         # # 115200 kbps
         # baud_rate_set(ser, 0x01)
         # reset(ser)
 
         start_addr = 0x00000000
         end_addr = 0x000FFFFF
-        # code_checksum = memory_checksum(ser, start_addr, end_addr)
         code = memory_read(ser, start_addr, end_addr)
         with open('code.bin', 'w+') as f:
             f.write(code)
+        # TODO: not sure how to get checksum, but that is OK since fw has crc32 checksums in it
+        # code_checksum = memory_checksum(ser, start_addr, end_addr)
         # checksum = sum(map(ord, code)) & 0xFFFF
         # assert code_checksum == checksum, "failed checksum validation"
 
-        # start_addr = 0x02000000
-        # end_addr = 0x02007FFF
-        # # data_checksum = memory_checksum(ser, start_addr, end_addr)
-        # data = memory_read(ser, start_addr, end_addr)
-        # with open('data.bin', 'w+') as f:
-        #     f.write(data)
-        # # checksum = sum(map(ord, data)) & 0xFFFF
-        # # assert data_checksum == checksum, "failed checksum validation"
+        start_addr = 0x02000000
+        end_addr = 0x02007FFF
+        data = memory_read(ser, start_addr, end_addr)
+        with open('data.bin', 'w+') as f:
+            f.write(data)
+        # TODO: not sure how to get checksum, but that is OK since fw has crc32 checksums in it
+        # data_checksum = memory_checksum(ser, start_addr, end_addr)
+        # checksum = sum(map(ord, data)) & 0xFFFF
+        # assert data_checksum == checksum, "failed checksum validation"
