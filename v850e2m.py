@@ -175,7 +175,7 @@ if __name__ == "__main__":
         start_addr = 0x00000000
         end_addr = 0x000FFFFF
         code = memory_read(ser, start_addr, end_addr)
-        with open('code.bin', 'w+') as f:
+        with open('code.bin', 'wb') as f:
             f.write(code)
         # TODO: not sure how to get checksum, but that is OK since fw has crc32 checksums in it
         # code_checksum = memory_checksum(ser, start_addr, end_addr)
@@ -185,7 +185,7 @@ if __name__ == "__main__":
         start_addr = 0x02000000
         end_addr = 0x02007FFF
         data = memory_read(ser, start_addr, end_addr)
-        with open('data.bin', 'w+') as f:
+        with open('data.bin', 'wb') as f:
             f.write(data)
         # TODO: not sure how to get checksum, but that is OK since fw has crc32 checksums in it
         # data_checksum = memory_checksum(ser, start_addr, end_addr)

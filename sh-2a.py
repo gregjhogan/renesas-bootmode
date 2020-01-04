@@ -267,7 +267,7 @@ if __name__ == "__main__":
         start_addr = user_boot_mat[0]['start_addr']
         end_addr = user_boot_mat[0]['end_addr']
         data = read_memory(ser, mem_area, start_addr, end_addr+1, 0x40)
-        with open('user_boot.bin', 'w+') as f:
+        with open('user_boot.bin', 'wb') as f:
             f.write(data)
         checksum = sum(map(ord, data)) & 0xFFFFFFFF
         assert user_boot_mat_checksum == checksum, "failed checksum validation"
@@ -276,7 +276,7 @@ if __name__ == "__main__":
         start_addr = user_mat[0]['start_addr']
         end_addr = user_mat[0]['end_addr']
         data = read_memory(ser, mem_area, start_addr, end_addr+1, 0x40)
-        with open('user.bin', 'w+') as f:
+        with open('user.bin', 'wb') as f:
             f.write(data)
         checksum = sum(map(ord, data + keycode)) & 0xFFFFFFFF
         assert user_mat_checksum == checksum, "failed checksum validation"
