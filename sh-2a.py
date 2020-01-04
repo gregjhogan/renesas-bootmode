@@ -207,7 +207,7 @@ def status_inquiry(ser):
 
 def read_memory(ser, mem_area, start, end, block_size):
     print('[READ MEMORY] area={} start={} end={} block_size={}'.format(mem_area, start, end, block_size))
-    data = ''
+    data = b''
     for i in tqdm(range(start, end, block_size)):
         send_request(ser, b'\x52', bytes([mem_area]) + struct.pack('!I', i) + struct.pack('!I', block_size))
         data += get_response(ser, b'\x52', size_len=4)

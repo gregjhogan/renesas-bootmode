@@ -131,7 +131,7 @@ def baud_rate_set(ser, d01):
 
 def memory_read(ser, start_addr, end_addr):
     print('[MEMORY READ] start_addr={} end_addr={}'.format(start_addr, end_addr))
-    data = ''
+    data = b''
     send_request(ser, b'\x50', struct.pack('!I', start_addr) + struct.pack('!I', end_addr))
     get_status(ser)
     done = False
