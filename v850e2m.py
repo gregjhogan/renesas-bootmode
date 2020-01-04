@@ -143,7 +143,6 @@ def memory_read(ser, start_addr, end_addr):
             data += d
             progress.update(len(d))
             cnt += 1
-    print(cnt)
     return data
 
 # TODO: figure out the correct request ID
@@ -184,6 +183,7 @@ if __name__ == "__main__":
 
         start_addr = 0x02000000
         end_addr = 0x02007FFF
+        # TODO: fix progress - dumps double the bytes requested because each data byte has a tag
         data = memory_read(ser, start_addr, end_addr)
         with open('data.bin', 'wb') as f:
             f.write(data)
