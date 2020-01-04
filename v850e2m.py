@@ -30,7 +30,9 @@ def get_checksum(req):
 
 def send_request(ser, id, data=None):
     if DEBUG: print('TX --->')
-    h = b'\x01'
+    ack = id == b'\x06'
+    # acknowledgement is a data frame
+    h = b'\x01' if ack == False else b'\x11'
     l = len(data) if data is not None else 0
     req = struct.pack('!H', l+1) + id
     if data: req += data
@@ -47,52 +49,7 @@ def send_request(ser, id, data=None):
     assert len(res) == len(echo), 'TIMEOUT!'
     assert res == echo,  'EXPECTED TX TO MATCH ECHO!'
 
-def get_status(ser):
-    if DEBUG: print('RX <---')
-    # read header (1 byte)
-    h = ser.read()
-    assert len(h) == 1, 'TIMEOUT!'
-    # 0x11 = data frame
-    if h != b'\x11':
-        if DEBUG: hexdump(h + ser.read())
-        raise Exception('EXPECTED DATA FRAME!')
-
-    # read length (2 bytes)
-    l = ser.read(2)
-    res = l
-    assert len(l) == 2, 'TIMEOUT!'
-    l = struct.unpack('!H', l)[0]
-    # TODO: not sure how to handle commands where length > 1
-    # if l != 1:
-    #     if DEBUG: hexdump(h + res + ser.read(10))
-    #     raise Exception('EXPECTED STATUS LENGTH TO BE 1!')
-
-    # read status (1 byte)
-    s = ser.read(l)
-    res += s
-    assert len(s) == l, 'TIMEOUT!'
-    # 0x06 = normal acknowledgment
-    if s[0] != b'\x06':
-        if DEBUG: hexdump(h + res + ser.read(100))
-        raise Exception('EXPECTED NORMAL ACKNOWLEDGMENT!')
-
-    # read checksum (1 byte)
-    c = ser.read()
-    assert len(c) == 1, 'TIMEOUT!'
-    assert get_checksum(res) == c, 'INVALID CHECKSUM!'
-    res += c
-
-    # read footer (1 byte)
-    f = ser.read()
-    assert len(f) == 1, 'TIMEOUT!'
-    # 0x03 = end of frame
-    if f != b'\x03':
-        if DEBUG: hexdump(h + res + f + ser.read())
-        raise Exception('EXPECTED END OF FRAME!')
-
-    if DEBUG: hexdump(h + res + f)
-
-def get_data(ser):
+def get_response(ser):
     if DEBUG: print('RX <---')
     # read header (1 byte)
     h = ser.read()
@@ -122,31 +79,36 @@ def get_data(ser):
     # read footer (1 byte)
     f = ser.read()
     assert len(f) == 1, 'TIMEOUT!'
-    # 0x03 = end of frame
-    if f != b'\x03' and f != b'\x17':
-        if DEBUG: hexdump(h + res + f + ser.read())
-        raise Exception('EXPECTED END OF FRAME!')
 
     if DEBUG: hexdump(h + res + f)
-    return d, f == b'\x03'
+    return d, f[0]
+
+def get_status(ser):
+    d, f = get_response(ser)
+
+    # TODO: not sure how to handle commands where length > 1
+    # if len(d) != 1:
+    #     raise Exception('EXPECTED STATUS LENGTH TO BE 1!')
+
+    # 0x06 = normal acknowledgment
+    if (d[0] if len(d) else None) != 0x06:
+        raise Exception('EXPECTED NORMAL ACKNOWLEDGMENT!')
+
+    # 0x03 = end of frame
+    if f != 0x03:
+        raise Exception('EXPECTED END OF FRAME!')
+
+def get_data(ser):
+    d, f = get_response(ser)
+
+    # 0x03 = end of frame, 0x17 = more data
+    if f != 0x03 and f != 0x17:
+        raise Exception('EXPECTED END OF FRAME OR CONTINUE!')
+
+    return d, f == 0x03
 
 def send_acknowledgment(ser):
-    if DEBUG: print('TX --->')
-    h = b'\x11'
-    l = 1
-    req = struct.pack('!H', l) + b'\x06'
-    req += get_checksum(req)
-    f = b'\x03'
-    if DEBUG: hexdump(h + req + f)
-    ser.write(h + req + f)
-
-    # single wire serial will have echo
-    echo = h + req + f
-    res = ser.read(len(echo))
-    if DEBUG: print('ECHO <---')
-    if DEBUG: hexdump(res)
-    assert len(res) == len(echo), 'TIMEOUT!'
-    assert res == echo,  'EXPECTED TX TO MATCH ECHO!'
+    send_request(ser, b'\x06')
 
 def reset(ser):
     print('[RESET]')
