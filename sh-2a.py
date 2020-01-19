@@ -270,7 +270,7 @@ if __name__ == "__main__":
         with open('user_boot.bin', 'wb') as f:
             f.write(data)
         checksum = sum(data) & 0xFFFFFFFF
-        assert user_boot_mat_checksum == checksum, "failed checksum validation"
+        assert user_boot_mat_checksum == checksum, f"failed boot checksum validation: {user_boot_mat_checksum} != {checksum}"
 
         mem_area = 1 # user memory area
         start_addr = user_mat[0]['start_addr']
@@ -279,4 +279,4 @@ if __name__ == "__main__":
         with open('user.bin', 'wb') as f:
             f.write(data)
         checksum = sum(data + keycode) & 0xFFFFFFFF
-        assert user_mat_checksum == checksum, "failed checksum validation"
+        assert user_mat_checksum == checksum, f"failed user checksum validation (not sure why this fails for some ecus): {user_mat_checksum} != {checksum}"
