@@ -50,7 +50,7 @@ def get_response(ser, id, no_data=False, no_checksum=False, size_len=1):
         assert len(size) == size_len, 'TIMEOUT!'
 
         if size_len == 1:
-            byte_cnt = ord(size)
+            byte_cnt = size[0]
         elif size_len == 2:
             byte_cnt = struct.unpack('!H', size)[0]
         elif size_len == 4:
@@ -82,10 +82,10 @@ def device_inquiry(ser):
     data = get_response(ser, b'\x30')
 
     devices = list()
-    count = ord(data[0])
+    count = data[0]
     idx = 1
     for i in range(count):
-        char_count = ord(data[idx])
+        char_count = data[idx]
         devices.append(data[idx+1:idx+5]) # device code is 4 bytes
         idx += char_count # skip product code
 
@@ -103,7 +103,7 @@ def clock_inquiry(ser):
 
     clocks = list()
     for i in range(len(data)):
-        clocks.append(ord(data[i]))
+        clocks.append(data[i])
 
     return clocks
 
@@ -117,7 +117,7 @@ def user_boot_mat_inquiry(ser):
     send_request(ser, b'\x24')
     data = get_response(ser, b'\x34')
 
-    mat_count = ord(data[0])
+    mat_count = data[0]
     mat_ranges = list()
     for i in range(1, len(data), 8):
         mat_ranges.append({
@@ -132,7 +132,7 @@ def user_mat_inquiry(ser):
     send_request(ser, b'\x25')
     data = get_response(ser, b'\x35')
 
-    mat_count = ord(data[0])
+    mat_count = data[0]
     mat_ranges = list()
     for i in range(1, len(data), 8):
         mat_ranges.append({
@@ -147,13 +147,13 @@ def multiplication_ratio_inquiry(ser):
     send_request(ser, b'\x22')
     data = get_response(ser, b'\x32')
 
-    clock_type_count = ord(data[0])
+    clock_type_count = data[0]
     clock_multi_ratios = list()
     idx = 1
     for i in range(clock_type_count):
-        ratio_count = ord(data[idx])
+        ratio_count = data[idx]
         idx += 1
-        ratios = map(ord, data[idx:idx+ratio_count])
+        ratios = data[idx:idx+ratio_count]
         clock_multi_ratios.append(ratios)
         idx += ratio_count
 
@@ -164,7 +164,7 @@ def operating_freq_inquiry(ser):
     send_request(ser, b'\x23')
     data = get_response(ser, b'\x33')
 
-    clock_type_count = ord(data[0])
+    clock_type_count = data[0]
     clock_freq_ranges = list()
     for i in range(1, 1+clock_type_count*4, 4):
         clock_freq_ranges.append({
@@ -176,7 +176,7 @@ def operating_freq_inquiry(ser):
 
 def bitrate_select(ser, baud_rate, input_freq_mhz, clock_count, ratio1, ratio2):
     print('[BITRATE SELECT] baud_rate={} input_freq_mhz={} clock_count={} ratio1={} ratio2={}'.format(baud_rate, input_freq_mhz, clock_count, ratio1, ratio2))
-    send_request(ser, b'\x3F', struct.pack('!H', int(baud_rate/100)) + struct.pack('!H', int(input_freq_mhz*100)) + bytes(clock_count, ratio1, ratio2))
+    send_request(ser, b'\x3F', struct.pack('!H', int(baud_rate/100)) + struct.pack('!H', int(input_freq_mhz*100)) + bytes([clock_count, ratio1, ratio2]))
     get_response(ser, b'\x06', no_data=True)
 
     # wait 1 bit time step before changing
@@ -269,7 +269,7 @@ if __name__ == "__main__":
         data = read_memory(ser, mem_area, start_addr, end_addr+1, 0x40)
         with open('user_boot.bin', 'wb') as f:
             f.write(data)
-        checksum = sum(map(ord, data)) & 0xFFFFFFFF
+        checksum = sum(data) & 0xFFFFFFFF
         assert user_boot_mat_checksum == checksum, "failed checksum validation"
 
         mem_area = 1 # user memory area
@@ -278,5 +278,5 @@ if __name__ == "__main__":
         data = read_memory(ser, mem_area, start_addr, end_addr+1, 0x40)
         with open('user.bin', 'wb') as f:
             f.write(data)
-        checksum = sum(map(ord, data + keycode)) & 0xFFFFFFFF
+        checksum = sum(data + keycode) & 0xFFFFFFFF
         assert user_mat_checksum == checksum, "failed checksum validation"
