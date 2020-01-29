@@ -21,7 +21,7 @@ This library is tested using a FTDI FT232RL USB to serial adapter
 ```
 ### notes
 * assumes MCU already has pull-up resistors on RX/TX lines
-* assumes MCU already has pull-down resistor on RESET line
+* assumes MCU already has pull-up resistor on RESET line
 * momentarily set reset low then hold high to get into boot mode
 
 ## V850E2
@@ -33,16 +33,17 @@ This library is tested using a FTDI FT232RL USB to serial adapter
 |          |          |            |  ,-|>-'  |           |
 |          |          |            |  |       |           |
 |          |          |        GND +<-*------>+ GND       |
-|          |          |        VCC +<----*--->+ FLMD0     |
-|          |          |            |     '--->+ RESET     |
+|          |          |        VCC +<-------->+ FLMD0     |
+|          |          |        RTS +<---|>o-->+ RESET     |
 |          |          |            |          |           |
 +----------+          +------------+          +-----------+
 ```
 
 ### notes
 * assumes MCU already has pull-up resistor on TX/RX line
-* assumes MCU already has pull-down resistor on RESET line
-* tri-state buffer (`|>`) setup
+* assumes MCU already has pull-up resistor on RESET line
+* connect FTDI RTS line to inverter to MCU RESET line
+* connect tri-state buffer
   * enable line wired to inverted FTDI TX
   * input line wired to GND
   * output line wired to TX/RX
